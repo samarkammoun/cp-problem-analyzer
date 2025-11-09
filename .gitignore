@@ -1,0 +1,48 @@
+
+# Python
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+ENV/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Bytecode cache
+**/__pycache__/
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+
+# Logs & runtime files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# OS-specific
+# macOS
+.DS_Store
+# Windows
+Thumbs.db
+
+# Dependencies cache
+pip-wheel-metadata/
+.cache/
+
+# data
+data/
