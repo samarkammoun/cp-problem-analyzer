@@ -1,20 +1,20 @@
 import json
+import re
 from collections import Counter
-import matplotlib.pyplot as plt
 from datetime import datetime
+from analysis.data_cleaner import extract_participated_contests
 
-
-def load_data(file_path="data/cleaned_submissions.json"):
+# Loads and parses JSON data from the given file path.
+def load_data(file_path):
     #with is a context manager, it automatically closes the file when done, so you don’t have to call f.close()
     with open(file_path, "r", encoding="utf-8") as f:
         return json.load(f)
-
     # json.load(f) reads the contents of the file, which must be in JSON format, and converts it into Python objects:
     # JSON objects → Python dictionaries (dict)
     # JSON arrays → Python lists (list)
     # Strings, numbers, booleans, null → Python equivalents
 
-def analyze_data(submissions):
+def analyze_submissions(submissions):
     tags_counter = Counter()
     verdict_counter = Counter()
     rating_counter = Counter()
@@ -22,16 +22,20 @@ def analyze_data(submissions):
 
     for sub in submissions:
         # update counter for the tags
+        # Problems solved per topic (tags)
         tags_counter.update(sub.get("tags",[]))
 
         # update counter for the verdicts
+        # Verdict distribution
         verdict_counter[sub.get("verdict","UNKNOWN")]+=1
 
         # update counter for the ratings
+        # Submissions per rating
         if sub.get("rating"):
             rating_counter[sub["rating"]]+=1
 
         # Timeline (convert unix time to month)
+        # Activity timeline (per month)
         date = datetime.fromtimestamp(sub["creationTimeSeconds"]).strftime("%Y-%m")
         timeline[date] += 1
 
@@ -42,52 +46,8 @@ def analyze_data(submissions):
         "timeline": timeline
     }
 
-def plot_stats(stats):
-    # Tags
-    plt.figure(figsize=(8, 4))
-    plt.bar(stats["tags"].keys(), stats["tags"].values())
-    plt.title("Problems by Topic")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-
-    # Verdicts
-    plt.figure(figsize=(6, 4))
-    plt.bar(stats["verdicts"].keys(), stats["verdicts"].values(), color="orange")
-    plt.title("Verdict Distribution")
-    plt.tight_layout()
-    plt.show()
-
-    # Rating
-    plt.figure(figsize=(6, 4))
-    plt.bar(stats["ratings"].keys(), stats["ratings"].values(), color="green")
-    plt.title("Problem Ratings")
-    plt.tight_layout()
-    plt.show()
-
-    # Timeline
-    plt.figure(figsize=(8, 4))
-    plt.plot(list(stats["timeline"].keys()), list(stats["timeline"].values()), marker="o")
-    plt.title("Accepted Submissions Over Time")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-
-    # Most rating per month
-    avg_ratings = difficulty_trend(data)
-    months = list(avg_ratings.keys())
-    ratings = list(avg_ratings.values())
-
-    plt.figure(figsize=(10, 4))
-    plt.plot(months, ratings, marker='o')
-    plt.title("Average Rating of Accepted Problems Over Time")
-    plt.xlabel("Month")
-    plt.ylabel("Average Rating")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-
-def topic_success_rates(submissions):
+# Calculates success rate per topic (tag). success_rate = accepted_submissions / total_attempts
+def compute_topic_success_rates(submissions):
     attempts = Counter()
     accepted = Counter()
 
@@ -102,9 +62,10 @@ def topic_success_rates(submissions):
     success_rate = {tag: accepted[tag]/attempts[tag] for tag in attempts}
     return success_rate, attempts, accepted
 
-def difficulty_trend(submissions):
-    monthly_ratings = {}
+# Computes the average solved problem rating per month based on 'OK' verdicts.
+def compute_rating_trend(submissions):
 
+    monthly_ratings = {}
     for s in submissions:
         if s.get("verdict") == "OK" and s.get("rating"):
             # Convert timestamp to month string
@@ -113,21 +74,54 @@ def difficulty_trend(submissions):
                 monthly_ratings[month] = Counter()
             monthly_ratings[month][s.get("rating")]+=1
 
+    # Average (most frequent) rating per month
     avg_ratings = {month: max(monthly_ratings.get(month), key=monthly_ratings.get(month).get) for month in monthly_ratings}
     return avg_ratings
 
+# Counts how many Div.1, Div.2, Div.3, Div.4 contests the user has participated in.
+def analyze_contest_divisions(contests, participated):
+    stats = {"Div.1": 0, "Div.2": 0, "Div.3": 0, "Div.4": 0}
+    for cid in participated:
+        contest = contests.get(cid)
+        if contest is None:
+            continue
+        # re = regular expression engine
+        # Used for text pattern matching, searching, replacing, validation
+        name = contest.get("name", "")
+        if re.search(r"Div\. ?1", name):
+            stats["Div.1"] += 1
+        elif re.search(r"Div\. ?2", name):
+            stats["Div.2"] += 1
+        elif re.search(r"Div\. ?3", name):
+            stats["Div.3"] += 1
+        elif re.search(r"Div\. ?4", name):
+            stats["Div.4"] += 1
+    return stats
 
+# data visualization test
 if __name__ == "__main__":
-    data = load_data()
-    stats = analyze_data(data)
-    plot_stats(stats)
-    success_rate, attempts, accepted = topic_success_rates(data)
-    sorted_topics = sorted(success_rate.items(), key=lambda x: x[1])
-    # 5 weakest topics
-    weakest = sorted_topics[:5]
-    # 5 strongest topics
-    strongest = sorted_topics[-5:]
+    # Load cleaned data
+    submissions_data = load_data("data/cleaned_submissions.json")
+    contests_data = load_data("data/contests_stats.json")
 
-    #print("Weakest topics:", weakest)
-    #print("Strongest topics:", strongest)
-    #print(difficulty_trend(data))
+    # Submissions analysis
+    submissions_stats = analyze_submissions(submissions_data)
+    success_rate, attempts, accepted = compute_topic_success_rates(submissions_data)
+    sorted_topics = sorted(success_rate.items(), key=lambda x: x[1])
+
+    # Display strongest and weakest topics
+    weakest = sorted_topics[:5]
+    strongest = sorted_topics[-5:]
+    print("Weakest topics:", weakest)
+    print("Strongest topics:", strongest)
+
+    # Difficulty trend
+    print("Rating trend:", compute_rating_trend(submissions_data))
+
+    # Contest participation
+    participated_contests = extract_participated_contests(submissions_data)
+    # because the contest IDs in contests_stats.json are strings
+    participated_contests = map(str,participated_contests)
+    div_stats = analyze_contest_divisions(contests_data, participated_contests)
+    print("Contest Division Stats:", div_stats)
+

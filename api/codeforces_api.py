@@ -11,9 +11,27 @@ def fetch_submissions(handle):
 
     return data['result']
 
-# Quick test
+def fetch_contest():
+    url = "https://codeforces.com/api/contest.list"
+    response = requests.get(url)
+    data = response.json()
+    if data['status'] != 'OK':
+        raise Exception("API error")
+    contests={}
+    for contest in data.get("result"):
+        id = contest.get("id")
+        contests[id]=contest
+    return contests
+
+
+
+# testing the api
 if __name__ == "__main__":
     handle = input("Enter Codeforces handle: ")
     submissions = fetch_submissions(handle)
     print(f"Fetched {len(submissions)} submissions.")
+
+
+    print(fetch_contest())
+
 
