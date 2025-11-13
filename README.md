@@ -164,5 +164,5 @@ This project requires the following Python libraries:
 
 ## **License**
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE.txt).
 You are free to use, modify, and distribute this project with proper attribution.
