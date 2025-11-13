@@ -64,7 +64,6 @@ def compute_topic_success_rates(submissions):
 
 # Computes the average solved problem rating per month based on 'OK' verdicts.
 def compute_rating_trend(submissions):
-
     monthly_ratings = {}
     for s in submissions:
         if s.get("verdict") == "OK" and s.get("rating"):

@@ -30,8 +30,6 @@ if __name__ == "__main__":
     handle = input("Enter Codeforces handle: ")
     submissions = fetch_submissions(handle)
     print(f"Fetched {len(submissions)} submissions.")
-
-
     print(fetch_contest())
 
 

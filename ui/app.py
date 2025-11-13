@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 # Add project root to Python path dynamically
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
@@ -76,7 +75,7 @@ if st.button("Analyze"):
 
         # Visualize divisions as bar chart
         divs_df = pd.DataFrame(list(div_stats.items()), columns=["Division", "Count"])
-        divs_df = divs_df.sort_values("Division")  # Div.1 → Div.4
+        divs_df = divs_df.sort_values("Division")  # from Div.1 to Div.4
         st.bar_chart(divs_df.set_index("Division"))
 
         st.success("Analysis Complete!")
